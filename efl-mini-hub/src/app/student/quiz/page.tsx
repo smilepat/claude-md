@@ -6,6 +6,7 @@ import {
   ChevronRight, Trophy, RotateCcw, ArrowRight,
   Loader2, Target, Zap, AlertCircle,
 } from 'lucide-react';
+import ChunkingTask from '@/components/tasks/ChunkingTask';
 
 // ── 타입 ──────────────────────────────────────────────────────
 interface PassageInfo {
@@ -392,32 +393,58 @@ export default function StudentQuizPage() {
         <p className="text-sm leading-relaxed text-slate-100 whitespace-pre-wrap">{q.prompt}</p>
       </div>
 
-      {/* 보기 */}
-      <div className="space-y-2.5 fade-in">
-        {(['A', 'B', 'C', 'D'] as const).map(label => {
-          let btnResult: 'correct' | 'wrong' | 'reveal' | null = null;
-          if (step === 'answered' && result) {
-            if (label === result.correctAnswer) btnResult = 'correct';
-            else if (label === selected && !result.isCorrect) btnResult = 'wrong';
-            else if (label === selected && result.isCorrect) btnResult = 'correct';
-          }
-          return (
-            <OptionButton
-              key={label}
-              label={label}
-              text={q.options[label] ?? ''}
-              selected={selected === label}
-              result={btnResult}
-              disabled={step === 'answered' || submitting}
-              onClick={() => { setSelected(label); handleSubmit(label); }}
-            />
-          );
-        })}
-      </div>
+      {/* 보기 또는 마이크로 과업 렌더링 (Component Registry Pattern) */}
+      {q.type === 'logicflow_chunking' ? (
+        <div className="mt-4">
+          <ChunkingTask 
+            taskData={q.options as unknown as any} 
+            onComplete={(isCorrect) => {
+              if (step !== 'answered') {
+                // 더미 라벨 'A' 또는 'X' 전송 (마이크로 태스크 전용 로깅을 추후 추가 가능)
+                handleSubmit(isCorrect ? 'A' : 'B');
+              }
+            }} 
+          />
+          {step === 'answered' && (
+            <button
+              onClick={nextQuestion}
+              className="btn-glow w-full mt-4 py-3 text-sm relative z-10 flex items-center justify-center gap-2"
+            >
+              {currentIdx + 1 >= questions.length ? (
+                <><Trophy className="w-4 h-4" /> 결과 보기</>
+              ) : (
+                <>다음 문제 <ArrowRight className="w-4 h-4" /></>
+              )}
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2.5 fade-in mt-4">
+          {(['A', 'B', 'C', 'D'] as const).map(label => {
+            let btnResult: 'correct' | 'wrong' | 'reveal' | null = null;
+            if (step === 'answered' && result) {
+              if (label === result.correctAnswer) btnResult = 'correct';
+              else if (label === selected && !result.isCorrect) btnResult = 'wrong';
+              else if (label === selected && result.isCorrect) btnResult = 'correct';
+            }
+            return (
+              <OptionButton
+                key={label}
+                label={label}
+                text={(q.options as any)[label] ?? ''}
+                selected={selected === label}
+                result={btnResult}
+                disabled={step === 'answered' || submitting}
+                onClick={() => { setSelected(label); handleSubmit(label); }}
+              />
+            );
+          })}
+        </div>
+      )}
 
-      {/* 정답 해설 */}
-      {step === 'answered' && result && (
-        <div className={`glass-card p-5 fade-in border ${result.isCorrect ? 'border-emerald-500/30' : 'border-red-500/30'}`}>
+      {/* 일반 문항 정답 해설 */}
+      {step === 'answered' && result && q.type !== 'logicflow_chunking' && (
+        <div className={`glass-card p-5 fade-in border ${result.isCorrect ? 'border-emerald-500/30' : 'border-red-500/30'} mt-4`}>
           <div className="flex items-center gap-2 mb-3">
             {result.isCorrect
               ? <CheckCircle2 className="w-5 h-5 text-emerald-400" />
