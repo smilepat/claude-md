@@ -28,7 +28,14 @@ export async function POST(req: NextRequest) {
       ORDER BY a.attempted_at DESC LIMIT 5
     `, args: [studentId] })).rows;
 
-    const recommendation = await generateRecommendations(skills, recentWrongs);
+    const candidateTasks = (await db.execute({ sql: `
+      SELECT id, type, prompt
+      FROM questions
+      WHERE type LIKE 'logicflow_%'
+      ORDER BY RANDOM() LIMIT 5
+    ` })).rows;
+
+    const recommendation = await generateRecommendations(skills, recentWrongs, candidateTasks);
 
     // AI 조언을 DB에 저장
     const recId = `REC_${randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()}`;

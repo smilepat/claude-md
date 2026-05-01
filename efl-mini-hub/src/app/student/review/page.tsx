@@ -117,6 +117,21 @@ export default function StudentReviewPage() {
                 ))}
               </div>
             </div>
+
+            {rec.recommended_task_id && (
+              <div className="glass-card p-6 border-indigo-500/30 bg-indigo-500/10">
+                <h2 className="text-base font-bold mb-3 text-indigo-300 flex items-center gap-2">
+                  <Target className="w-5 h-5" /> 추천 마이크로 과업
+                </h2>
+                <p className="text-sm text-slate-300 mb-4">{rec.recommended_task_desc}</p>
+                <button
+                  onClick={() => window.location.href = `/student/task-test?taskId=${rec.recommended_task_id}`}
+                  className="btn-glow w-full py-2.5 text-sm"
+                >
+                  과업 시작하기 (Task {rec.recommended_task_id.replace('Q_TASK_CSAT_', '')})
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

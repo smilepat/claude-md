@@ -1,21 +1,36 @@
 'use client';
 
+import { useEffect, useState, Suspense } from 'react';
 import ChunkingTask from '@/components/tasks/ChunkingTask';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
-const samplePayload = {
-  "type": "chunking",
-  "sentence": "In our efforts to be the good child, the uncomplaining employee, or the cooperative patient, many of us fall into the trap of trying to please people by going along with whatever they want us to do.",
-  "chunks": [
-    "In our efforts to be the good child, the uncomplaining employee, or the cooperative patient,",
-    " many of us fall into the trap of trying to please people",
-    " by going along with whatever they want us to do."
-  ],
-  "explanation": "문장의 긴 전치사구(도입부)와 주절, 그리고 행위의 방식을 설명하는 전치사구를 기준으로 의미 단위별로 끊어 읽는 것이 문장 이해에 도움이 됩니다."
-};
+function TaskTestContent() {
+  const searchParams = useSearchParams();
+  const taskId = searchParams.get('taskId');
+  
+  const [taskData, setTaskData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-export default function TaskTestPage() {
+  useEffect(() => {
+    if (!taskId) {
+      setLoading(false);
+      return;
+    }
+
+    // 간단하게 API 호출 (미구현 시 더미 데이터 fallback 가능)
+    fetch(`/api/student/tasks?taskId=${taskId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.task) setTaskData(JSON.parse(data.task.options));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [taskId]);
+
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>;
+
   return (
     <div className="space-y-6 pt-4 pb-20">
       <div className="fade-in">
@@ -26,11 +41,17 @@ export default function TaskTestPage() {
           🧪 LogicFlow Task PoC 
         </h1>
         <p className="text-slate-400 text-sm mt-1">
-          AI가 생성한 인터랙티브 학습 과업 (Chunking) 미리보기입니다.
+          {taskId ? `학습 과업 [${taskId}]` : 'AI가 생성한 인터랙티브 학습 과업 (Chunking) 미리보기입니다.'}
         </p>
       </div>
 
-      <ChunkingTask taskData={samplePayload} />
+      {taskData ? (
+        <ChunkingTask taskData={taskData} />
+      ) : (
+        <div className="p-10 text-center text-slate-400">
+          올바른 Task ID가 없거나 로드에 실패했습니다.
+        </div>
+      )}
       
       <div className="glass-card p-5 mt-8 border-purple-500/30 bg-purple-500/5">
         <h3 className="font-bold text-purple-300 mb-2">💡 향후 확장 로드맵</h3>
@@ -41,5 +62,13 @@ export default function TaskTestPage() {
         </ul>
       </div>
     </div>
+  );
+}
+
+export default function TaskTestPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+      <TaskTestContent />
+    </Suspense>
   );
 }
